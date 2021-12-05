@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func main() {
@@ -23,14 +22,24 @@ func main() {
 		log.Fatal(err)
 	}
 	defer client.Disconnect(ctx)
-	err = client.Ping(ctx, readpref.Primary())
+
+	bookManagerDatabase := client.Database("book-manager")
+	booksCollection := bookManagerDatabase.Collection("books")
+
+	bookResult, err := booksCollection.InsertMany(ctx, []interface{}{
+		bson.D{
+			{Key: "Name", Value: "Harry Potter"},
+			{Key: "Author", Value: "J.K.Rowling"},
+		},
+		bson.D{
+			{Key: "Name", Value: "Golang Intro"},
+			{Key: "Author", Value: "Dimitar Kolev"},
+		},
+	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	databases, err := client.ListDatabaseNames(ctx, bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(databases)
+	fmt.Printf("Inserted %v books\n", len(bookResult.InsertedIDs))
 }
